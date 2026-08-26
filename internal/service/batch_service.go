@@ -94,7 +94,7 @@ func (s *batchService) Update(ctx context.Context, actor Actor, id uint, input d
 		if err != nil {
 			return err
 		}
-		if batch.Status == constants.BatchStatusReleased {
+		if !batch.Mutable() {
 			return util.Conflict("已放行批次不可编辑")
 		}
 		before := *batch

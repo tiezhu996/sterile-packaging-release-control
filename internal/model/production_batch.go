@@ -103,7 +103,7 @@ func (b ProductionBatch) ReadyForRelease() (bool, string) {
 		return false, "batch has not started"
 	}
 	if b.Status == constants.BatchStatusReleased {
-		return true, ""
+		return false, "batch already released and cannot be released again"
 	}
 	total, _, failed, pending, retest := b.InspectionSummary()
 	if total == 0 {
@@ -122,5 +122,5 @@ func (b ProductionBatch) ReadyForRelease() (bool, string) {
 }
 
 func (b ProductionBatch) Mutable() bool {
-	return true
+	return b.Status != constants.BatchStatusReleased
 }
