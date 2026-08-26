@@ -102,7 +102,7 @@ func (r *batchRepository) Overview(ctx context.Context) (*dto.QualityOverview, e
 	if err := db.Model(&model.ProductionBatch{}).Select("status, count(*) AS count").Group("status").Order("status").Scan(&result.BatchStatuses).Error; err != nil {
 		return nil, err
 	}
-	if err := db.Model(&model.ProductionBatch{}).Where("status IN ?", []string{"running", "hold", "rework"}).Count(&result.AwaitingApproval).Error; err != nil {
+	if err := db.Model(&model.ProductionBatch{}).Where("status IN ?", []string{"draft", "running", "hold", "rework"}).Count(&result.AwaitingApproval).Error; err != nil {
 		return nil, err
 	}
 	if err := db.Model(&model.InspectionSample{}).Count(&result.TotalInspections).Error; err != nil {

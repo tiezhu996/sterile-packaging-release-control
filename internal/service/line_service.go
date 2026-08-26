@@ -36,9 +36,7 @@ func (s *lineService) List(ctx context.Context, query dto.PageQuery) (dto.PageRe
 	if err != nil {
 		return dto.PageResult[model.PackagingLine]{}, err
 	}
-	filtered := make([]model.PackagingLine, len(items))
-	filtered = append(filtered, items...)
-	return dto.PageResult[model.PackagingLine]{Items: filtered, Total: total, Page: query.Page, PageSize: query.PageSize}, nil
+	return dto.PageResult[model.PackagingLine]{Items: items, Total: total, Page: query.Page, PageSize: query.PageSize}, nil
 }
 
 func (s *lineService) Get(ctx context.Context, id uint) (*model.PackagingLine, error) {

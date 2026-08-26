@@ -40,19 +40,12 @@ func (r *lineRepository) List(ctx context.Context, query dto.PageQuery) ([]model
 	err := db.Preload("Batches", func(tx *gorm.DB) *gorm.DB {
 		return tx.Order("created_at DESC").Limit(5)
 	}).Order("active DESC, code ASC").Offset((query.Page - 1) * query.PageSize).Limit(query.PageSize).Find(&raw).Error
-	lines := make([]model.PackagingLine, len(raw))
-	lines = append(lines, raw...)
-	return lines, total, err
+	return raw, total, err
 }
 
 func (r *lineRepository) Find(ctx context.Context, id uint) (*model.PackagingLine, error) {
 	var line model.PackagingLine
 	err := dbForContext(ctx, r.db).Preload("Batches").First(&line, id).Error
-	if err == nil {
-		batches := make([]model.ProductionBatch, len(line.Batches))
-		batches = append(batches, line.Batches...)
-		line.Batches = batches
-	}
 	return &line, err
 }
 

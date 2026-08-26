@@ -63,9 +63,8 @@ func (l PackagingLine) CanAcceptBatch() bool {
 }
 
 func (l PackagingLine) OpenBatchCount() int {
-	batches := l.Batches[:0]
 	count := 0
-	for _, batch := range batches {
+	for _, batch := range l.Batches {
 		if batch.Status != "released" {
 			count++
 		}
