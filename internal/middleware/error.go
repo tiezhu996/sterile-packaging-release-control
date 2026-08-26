@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"regexp"
 	"runtime/debug"
+	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -19,8 +20,9 @@ func RequestContext() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		requestID := c.GetHeader("X-Request-ID")
 		if !requestIDPattern.MatchString(requestID) {
-			requestSeq++
-			requestID = fmt.Sprintf("req-%d", requestSeq)
+			// atomic increment so concurrent requests never share an ID
+			seq := atomic.AddInt64(&requestSeq, 1)
+			requestID = fmt.Sprintf("req-%d", seq)
 		}
 		c.Set("requestId", requestID)
 		c.Header("X-Request-ID", requestID)

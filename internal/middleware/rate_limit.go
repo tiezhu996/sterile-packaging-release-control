@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,8 +16,12 @@ type localCounter struct {
 	expires time.Time
 }
 
-// sharedWindows 被所有限流器实例共享（不同实例持有各自的 mu，锁范围漂移）
-var sharedWindows = map[string]localCounter{}
+// localCounts is the fallback store used when Redis is unavailable. It is read
+// and written from every request goroutine, so it must be guarded by a mutex.
+var (
+	localCountsMu = sync.Mutex{}
+	localCounts   = map[string]localCounter{}
+)
 
 type RateLimiter struct {
 	redis  *redis.Client
@@ -69,11 +74,13 @@ func (l *RateLimiter) redisCount(ctx context.Context, key string) (int64, time.D
 
 func (l *RateLimiter) localCount(key string) (int64, time.Duration) {
 	now := time.Now()
-	value := sharedWindows[key]
+	localCountsMu.Lock()
+	defer localCountsMu.Unlock()
+	value := localCounts[key]
 	if value.expires.Before(now) {
 		value = localCounter{expires: now.Add(l.window)}
 	}
 	value.count++
-	sharedWindows[key] = value
+	localCounts[key] = value
 	return value.count, time.Until(value.expires)
 }
