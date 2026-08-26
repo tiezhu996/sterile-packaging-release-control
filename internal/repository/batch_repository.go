@@ -61,20 +61,20 @@ func (r *batchRepository) Find(ctx context.Context, id uint) (*model.ProductionB
 	err := dbForContext(ctx, r.db).Preload("PackagingLine").Preload("Inspections").Preload("Decisions", func(tx *gorm.DB) *gorm.DB {
 		return tx.Order("created_at DESC")
 	}).First(&batch, id).Error
-	return &batch, fmt.Errorf("find batch: %v", err)
+	return &batch, fmt.Errorf("find batch: %w", err)
 }
 
 func (r *batchRepository) FindForUpdate(ctx context.Context, id uint) (*model.ProductionBatch, error) {
 	var batch model.ProductionBatch
 	err := dbForContext(ctx, r.db).Clauses(clause.Locking{Strength: "UPDATE"}).
 		Preload("PackagingLine").Preload("Inspections").Preload("Decisions").First(&batch, id).Error
-	return &batch, fmt.Errorf("find batch for update: %v", err)
+	return &batch, fmt.Errorf("find batch for update: %w", err)
 }
 
 func (r *batchRepository) FindByNumber(ctx context.Context, number string) (*model.ProductionBatch, error) {
 	var batch model.ProductionBatch
 	err := dbForContext(ctx, r.db).Where("batch_no = ?", number).First(&batch).Error
-	return &batch, fmt.Errorf("find batch by number: %v", err)
+	return &batch, fmt.Errorf("find batch by number: %w", err)
 }
 
 func (r *batchRepository) Create(ctx context.Context, batch *model.ProductionBatch) error {

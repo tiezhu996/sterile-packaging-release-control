@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -43,7 +44,11 @@ func (s *batchService) List(ctx context.Context, filter repository.BatchFilter) 
 }
 
 func (s *batchService) Get(ctx context.Context, id uint) (*model.ProductionBatch, error) {
-	return s.repo.Find(ctx, id)
+	batch, err := s.repo.Find(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("get batch: %w", err)
+	}
+	return batch, nil
 }
 
 func (s *batchService) Overview(ctx context.Context) (*dto.QualityOverview, error) {
@@ -81,7 +86,7 @@ func (s *batchService) Create(ctx context.Context, actor Actor, input dto.Create
 		return s.audit.Record(txCtx, actor, "batch.created", "ProductionBatch", batch.ID, nil, batch)
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("transition batch: %w", err)
 	}
 	return s.repo.Find(ctx, batch.ID)
 }
@@ -139,7 +144,7 @@ func (s *batchService) Update(ctx context.Context, actor Actor, id uint, input d
 		return s.audit.Record(txCtx, actor, "batch.updated", "ProductionBatch", batch.ID, before, batch)
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("update batch: %w", err)
 	}
 	return s.repo.Find(ctx, batch.ID)
 }
