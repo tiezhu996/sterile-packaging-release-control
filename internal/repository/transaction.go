@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -25,10 +26,21 @@ func (t *transactor) WithinTransaction(ctx context.Context, fn func(context.Cont
 		return tx.Error
 	}
 	defer func() {
-		err = tx.Commit().Error
+		if p := recover(); p != nil {
+			_ = tx.Rollback().Error
+			panic(p)
+		}
 	}()
-	err = fn(context.WithValue(ctx, transactionContextKey{}, tx))
-	return err
+	if err = fn(context.WithValue(ctx, transactionContextKey{}, tx)); err != nil {
+		// Roll back any partial mutation so a failed business operation never leaves
+		// the database in a half-applied state. The original error is preserved; a
+		// rollback failure is surfaced only as a wrapped secondary error.
+		if rbErr := tx.Rollback().Error; rbErr != nil {
+			return fmt.Errorf("%w (rollback failed: %v)", err, rbErr)
+		}
+		return err
+	}
+	return tx.Commit().Error
 }
 
 func dbForContext(ctx context.Context, fallback *gorm.DB) *gorm.DB {

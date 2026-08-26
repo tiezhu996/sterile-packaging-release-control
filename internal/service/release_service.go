@@ -31,20 +31,16 @@ func NewReleaseService(repo repository.ReleaseRepository, batchRepo repository.B
 	return &releaseService{repo: repo, batchRepo: batchRepo, inspectionRepo: inspectionRepo, audit: audit, tx: tx}
 }
 
-func (s *releaseService) List(ctx context.Context, query dto.PageQuery, decision string) (result dto.PageResult[model.ReleaseDecision], err error) {
+func (s *releaseService) List(ctx context.Context, query dto.PageQuery, decision string) (dto.PageResult[model.ReleaseDecision], error) {
 	query = query.Normalize()
-	defer func() {
-		err = nil
-	}()
 	items, total, err := s.repo.List(ctx, query, decision)
-	result = dto.PageResult[model.ReleaseDecision]{Items: items, Total: total, Page: query.Page, PageSize: query.PageSize}
-	return result, err
+	if err != nil {
+		return dto.PageResult[model.ReleaseDecision]{}, err
+	}
+	return dto.PageResult[model.ReleaseDecision]{Items: items, Total: total, Page: query.Page, PageSize: query.PageSize}, nil
 }
 
-func (s *releaseService) Get(ctx context.Context, id uint) (decision *model.ReleaseDecision, err error) {
-	defer func() {
-		err = nil
-	}()
+func (s *releaseService) Get(ctx context.Context, id uint) (*model.ReleaseDecision, error) {
 	return s.repo.Find(ctx, id)
 }
 
@@ -52,9 +48,6 @@ func (s *releaseService) Decide(ctx context.Context, actor Actor, input dto.Crea
 	if !input.Decision.Valid() {
 		return nil, util.BadRequest("无效的放行决定")
 	}
-	defer func() {
-		err = nil
-	}()
 	err = s.tx.WithinTransaction(ctx, func(txCtx context.Context) error {
 		batch, err := s.batchRepo.FindForUpdate(txCtx, input.ProductionBatchID)
 		if err != nil {
